@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rony Pro | Live Market Dashboard</title>
+  <meta name="description" content="Rony Pro crypto market dashboard, portfolio and prediction markets.">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #080d18;
+      --panel: #111a2b;
+      --panel2: #172238;
+      --text: #edf3ff;
+      --muted: #92a2bd;
+      --green: #2bd99b;
+      --red: #ff667c;
+      --blue: #7895ff;
+      --border: #26344b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 9px;
+      padding: 11px 15px;
+      color: white;
+      background: #536ff0;
+    }
+
+    button:hover { opacity: .88; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 225px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      background: #0c1424;
+      border-right: 1px solid var(--border);
+      padding: 25px 16px;
+    }
+
+    .brand {
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -.8px;
+      margin: 0 0 6px;
+    }
+
+    .brand span { color: var(--blue); }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 32px;
+    }
+
+    .nav-label {
+      color: #687c9d;
+      font-size: 11px;
+      margin: 23px 10px 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .nav {
+      width: 100%;
+      background: transparent;
+      color: #aab9d1;
+      text-align: left;
+      margin: 3px 0;
+    }
+
+    .nav.active {
+      background: #1c2b49;
+      color: white;
+    }
+
+    main { min-width: 0; padding: 24px; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+    }
+
+    h1 { font-size: 25px; margin: 0 0 6px; }
+    h2 { font-size: 17px; margin: 0 0 18px; }
+    p { color: var(--muted); }
+
+    .muted { color: var(--muted); font-size: 13px; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #142b2b;
+      color: var(--green);
+      padding: 8px 11px;
+      border-radius: 30px;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .panel, .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 19px;
+      min-width: 0;
+    }
+
+    .stat .label { color: var(--muted); font-size: 13px; }
+    .stat .value { font-size: 25px; font-weight: 700; margin: 12px 0 7px; }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(270px, 1fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .coin-list { display: grid; gap: 2px; }
+
+    .coin {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 15px;
+      padding: 14px 3px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .coin:last-child { border-bottom: 0; }
+    .coin-name { font-weight: 700; }
+    .coin-symbol { color: var(--muted); font-size: 12px; margin-top: 5px; }
+    .price { text-align: right; font-weight: 600; }
+    .change { text-align: right; font-size: 12px; }
+
+    .chart-wrap { height: 285px; position: relative; }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .secondary { background: #25344e; }
+    .buy { background: #148e68; }
+    .sell { background: #a53d56; }
+
+    input, select {
+      background: #0b1424;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px;
+      border-radius: 9px;
+      width: 100%;
+      outline: none;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 13px 0 7px;
+    }
+
+    .trade-form { display: grid; gap: 4px; }
+
+    .trade-form button { margin-top: 15px; width: 100%; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { border-collapse: collapse; width: 100%; min-width: 440px; }
+    th, td {
+      text-align: left;
+      padding: 13px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    th { color: var(--muted); font-weight: 500; }
+
+    .notice {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #29243a;
+      color: #d2c8ff;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .market-card {
+      background: var(--panel2);
+      padding: 15px;
+      border-radius: 11px;
+      margin-bottom: 10px;
+    }
+
+    .market-card strong { display: block; line-height: 1.5; }
+    .market-card p { font-size: 12px; margin-bottom: 0; }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 22px 5px;
+      font-size: 13px;
+    }
+
+    footer {
+      color: #71809a;
+      font-size: 12px;
+      text-align: center;
+      padding: 25px 0 5px;
+    }
+
+    @media (max-width: 1050px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 16px;
+      }
+      .brand { font-size: 22px; }
+      .tagline { margin-bottom: 12px; }
+      .nav-label { margin-top: 14px; }
+      .navs { display: flex; overflow-x: auto; gap: 5px; }
+      .nav { width: auto; white-space: nowrap; }
+      main { padding: 16px; }
+      .grid { gap: 10px; }
+      .stat, .panel { padding: 14px; }
+      .stat .value { font-size: 20px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand">RONY <span>PRO</span></div>
+    <div class="tagline">Live Market Dashboard</div>
+
+    <div class="nav-label">Workspace</div>
+    <div class="navs">
+      <button class="nav active" data-section="dashboard">▦ Dashboard</button>
+      <button class="nav" data-section="markets">◈ Markets</button>
+      <button class="nav" data-section="portfolio">▤ Portfolio</button>
+      <button class="nav" data-section="polymarket">◎ Polymarket</button>
+      <button class="nav" data-section="account">♙ Account / Admin</button>
+    </div>
+
+    <div class="nav-label">Connection</div>
+    <div class="muted">Prices: public market API</div>
+    <div class="muted" style="margin-top:8px">Trading: demo mode only</div>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <h1 id="page-title">Dashboard</h1>
+        <div class="muted">Your crypto market at a glance.</div>
+      </div>
+      <div class="actions">
+        <span class="status"><span class="dot"></span> Public API</span>
+        <button class="secondary" id="refresh">Refresh</button>
+      </div>
+    </header>
+
+    <div class="notice">
+      <strong>Demo trading notice:</strong>
+      Crypto prices are requested from CoinGecko. Portfolio trades are stored
+      only in this browser session. No exchange account is connected and no
+      real-money order is placed.
+    </div>
+
+    <section class="section active" id="dashboard">
+      <div class="grid">
+        <div class="stat">
+          <div class="label">BTC Price</div>
+          <div class="value" id="btc-price">Loading...</div>
+          <div class="muted">Bitcoin / USD</div>
+        </div>
+        <div class="stat">
+          <div class="label">ETH Price</div>
+          <div class="value" id="eth-price">Loading...</div>
+          <div class="muted">Ethereum / USD</div>
+        </div>
+        <div class="stat">
+          <div class="label">Demo Portfolio</div>
+          <div class="value" id="portfolio-value">$10,000.00</div>
+          <div class="muted">Starting demo balance</div>
+        </div>
+        <div class="stat">
+          <div class="label">Demo P/L</div>
+          <div class="value green" id="pnl">$0.00</div>
+          <div class="muted">From paper trades</div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>BTC / USD</h2>
+              <div class="muted">Historical daily price</div>
+            </div>
+            <select id="chart-days" style="width:auto">
+              <option value="1">24 hours</option>
+              <option value="7" selected>7 days</option>
+              <option value="30">30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </div>
+          <div class="chart-wrap"><canvas id="price-chart"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Paper Trading</h2>
+            <span class="muted">Simulated</span>
+          </div>
+          <form class="trade-form" id="trade-form">
+            <label for="asset">Asset</label>
+            <select id="asset">
+              <option value="bitcoin">Bitcoin (BTC)</option>
+              <option value="ethereum">Ethereum (ETH)</option>
+              <option value="solana">Solana (SOL)</option>
+              <option value="binancecoin">BNB</option>
+            </select>
+            <label for="side">Order type</label>
+            <select id="side">
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+            </select>
+            <label for="amount">Amount in USD</label>
+            <input id="amount" type="number" min="1" step="1"
+                   placeholder="Example: 100" required>
+            <button type="submit">Place Demo Order</button>
+          </form>
+          <p class="muted" id="trade-message" aria-live="polite">
+            This order will not reach a real exchange.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Top Crypto Markets</h2>
+          <span class="muted" id="market-updated">Waiting for data</span>
+        </div>
+        <div class="coin-list" id="coin-list">
+          <div class="empty">Loading market prices...</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="markets">
+      <div class="panel">
+        <h2>Crypto Markets</h2>
+        <p>Prices below come from a public market data API when available.</p>
+        <div class="coin-list" id="market-list">
+          <div class="empty">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="portfolio">
+      <div class="grid">
+        <div class="stat">
+          <div class="label">Starting Balance</div>
+          <div class="value">$10,000</div>
+        </div>
+        <div class="stat">
+          <div class="label">Available Demo Cash</div>
+          <div class="value" id="cash-value">$10,000</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Demo Order History</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Asset</th><th>Side</th><th>Amount</th><th>Time</th>
+            </tr></thead>
+            <tbody id="history">
+              <tr><td colspan="4" class="empty">No demo trades yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="polymarket">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Polymarket Discovery</h2>
+          <button id="load-polymarket">Load Markets</button>
+        </div>
+        <p>Browse public prediction-market information. This does not place bets.</p>
+        <div id="poly-list">
+          <div class="empty">Click “Load Markets” to request public market data.</div>
+        </div>
+        <a href="https://polymarket.com/?via=rony-j6jh"
+           target="_blank" rel="noopener noreferrer">
+          Visit Polymarket
+        </a>
+      </div>
+    </section>
+
+    <section class="section" id="account">
+      <div class="main-grid">
+        <div class="panel">
+          <h2>Account UI Preview</h2>
+          <p>This standalone HTML does not provide secure user authentication.</p>
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@example.com">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Password">
+          <button style="margin-top:15px" id="login-preview">Preview Login</button>
+          <p class="muted" id="login-message" aria-live="polite">
+            Connect a secure backend for real login.
+          </p>
+        </div>
+        <div class="panel">
+          <h2>Admin Panel Preview</h2>
+          <p>Admin access must be enforced by a backend server, never by hiding HTML.</p>
+          <div class="market-card">
+            <strong>Website</strong>
+            <p>Rony Pro</p>
+          </div>
+          <div class="market-card">
+            <strong>Market data</strong>
+            <p>Public provider API</p>
+          </div>
+          <div class="market-card">
+            <strong>Trading status</strong>
+            <p>Paper trading only</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Rony Pro © 2026 · Market data may be delayed or unavailable.
+      Demo trading is not real trading or financial advice.
+    </footer>
+  </main>
+</div>
+
+<script>
+  const API = "https://api.coingecko.com/api/v3";
+  const coins = [
+    { id: "bitcoin", symbol: "BTC", name: "Bitcoin" },
+    { id: "ethereum", symbol: "ETH", name: "Ethereum" },
+    { id: "solana", symbol: "SOL", name: "Solana" },
+    { id: "binancecoin", symbol: "BNB", name: "BNB" },
+    { id: "ripple", symbol: "XRP", name: "XRP" },
+    { id: "dogecoin", symbol: "DOGE", name: "Dogecoin" }
+  ];
+
+  const state = {
+    prices: {},
+    cash: 10000,
+    startingCash: 10000,
+    trades: [],
+    chart: null
+  };
+
+  const $ = id => document.getElementById(id);
+  const money = n => Number(n).toLocaleString("en-US", {
+    style: "currency", currency: "USD", maximumFractionDigits: 2
+  });
+
+  async function fetchJSON(url) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("API request failed: " + response.status);
+    return response.json();
+  }
+
+  async function loadPrices() {
+    $("market-updated").textContent = "Refreshing...";
+    try {
+      const ids = coins.map(c => c.id).join(",");
+      const data = await fetchJSON(
+        `${API}/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`
+      );
+      state.prices = data;
+
+      $("btc-price").textContent = money(data.bitcoin?.usd ?? 0);
+      $("eth-price").textContent = money(data.ethereum?.usd ?? 0);
+      renderCoins();
+      updatePortfolio();
+      $("market-updated").textContent =
+        "Updated " + new Date().toLocaleTimeString();
+    } catch (error) {
+      $("market-updated").textContent = "Market API unavailable";
+      $("coin-list").innerHTML =
+        '<div class="empty">Could not load prices. Try refreshing later; the public API may be rate-limited.</div>';
+      $("market-list").innerHTML = $("coin-list").innerHTML;
+    }
+  }
+
+  function renderCoins() {
+    const html = coins.map(c => {
+      const item = state.prices[c.id];
+      if (!item) return "";
+      const price = item.usd;
+      const change = item.usd_24h_change;
+      const cls = change >= 0 ? "green" : "red";
+      return `<div class="coin">
+        <div><div class="coin-name">${c.name}</div>
+        <div class="coin-symbol">${c.symbol}</div></div>
+        <div class="price">${money(price)}</div>
+        <div class="change ${cls}">${Number(change || 0).toFixed(2)}%</div>
+      </div>`;
+    }).join("");
+
+    $("coin-list").innerHTML = html || '<div class="empty">No market data.</div>';
+    $("market-list").innerHTML = $("coin-list").innerHTML;
+  }
+
+  async function loadChart() {
+    const days = $("chart-days").value;
+    try {
+      const data = await fetchJSON(
+        `${API}/coins/bitcoin/market_chart?vs_currency=usd&days=${days}`
+      );
+      const labels = data.prices.map(p =>
+        new Date(p[0]).toLocaleDateString()
+      );
+      const values = data.prices.map(p => p[1]);
+      const ctx = $("price-chart").getContext("2d");
+
+      if (state.chart) state.chart.destroy();
+      state.chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "BTC Price (USD)",
+            data: values,
+            borderColor: "#7895ff",
+            backgroundColor: "rgba(120,149,255,.12)",
+            borderWidth: 2,
+            fill: true,
+            pointRadius: 0,
+            tension: .25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: "#aab9d1" } } },
+          scales: {
+            x: {
+              ticks: { color: "#92a2bd", maxTicksLimit: 6 },
+              grid: { color: "rgba(146,162,189,.08)" }
+            },
+            y: {
+              ticks: {
+                color: "#92a2bd",
+                callback: value => "$" + Number(value).toLocaleString()
+              },
+              grid: { color: "rgba(146,162,189,.08)" }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      $("price-chart").insertAdjacentHTML(
+        "afterend",
+        '<p class="muted">Chart data is temporarily unavailable.</p>'
+      );
+    }
+  }
+
+  function updatePortfolio() {
+    $("cash-value").textContent = money(state.cash);
+    $("portfolio-value").textContent = money(state.cash);
+    const pnl = state.cash - state.startingCash;
+    $("pnl").textContent = money(pnl);
+    $("pnl").className = "value " + (pnl >= 0 ? "green" : "red");
+  }
+
+  $("trade-form").addEventListener("submit", event => {
+    event.preventDefault();
+    const asset = $("asset").value;
+    const side = $("side").value;
+    const amount = Number($("amount").value);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      $("trade-message").textContent = "Enter a valid amount.";
+      return;
+    }
+
+    if (side === "buy" && amount > state.cash) {
+      $("trade-message").textContent = "Not enough demo cash.";
+      return;
+    }
+
+    if (side === "buy") state.cash -= amount;
+    else state.cash += amount;
+
+    const trade = {
+      asset,
+      side,
+      amount,
+      time: new Date().toLocaleString()
+    };
+    state.trades.unshift(trade);
+    renderHistory();
+    updatePortfolio();
+
+    $("trade-message").textContent =
+      `Demo ${side.toUpperCase()} recorded for ${money(amount)}. No real order was placed.`;
+    $("amount").value = "";
+  });
+
+  function renderHistory() {
+    $("history").innerHTML = state.trades.map(t => `
+      <tr>
+        <td>${coins.find(c => c.id === t.asset)?.symbol || t.asset}</td>
+        <td class="${t.side === "buy" ? "green" : "red"}">${t.side.toUpperCase()}</td>
+        <td>${money(t.amount)}</td>
+        <td>${t.time}</td>
+      </tr>`).join("") ||
+      '<tr><td colspan="4" class="empty">No demo trades yet.</td></tr>';
+  }
+
+  async function loadPolymarket() {
+    $("poly-list").innerHTML = '<div class="empty">Loading public markets...</div>';
+    try {
+      const data = await fetchJSON(
+        "https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=10"
+      );
+      if (!Array.isArray(data) || !data.length) {
+        $("poly-list").innerHTML = '<div class="empty">No markets returned.</div>';
+        return;
+      }
+
+      $("poly-list").innerHTML = data.map(m => {
+        const question = String(m.question || "Untitled market");
+        const volume = Number(m.volume || 0);
+        return `<div class="market-card">
+          <strong>${escapeHTML(question)}</strong>
+          <p>Reported volume: ${money(volume)}</p>
+          <p>Public market information · No bet placed</p>
+        </div>`;
+      }).join("");
+    } catch (error) {
+      $("poly-list").innerHTML =
+        '<div class="empty">Could not load Polymarket data. The public API or browser CORS policy may block this request.</div>';
+    }
+  }
+
+  function escapeHTML(value) {
+    return value.replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;",
+      '"': "&quot;", "'": "&#39;"
+    })[char]);
+  }
+
+  document.querySelectorAll(".nav").forEach(button => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".nav").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      button.classList.add("active");
+      $(button.dataset.section).classList.add("active");
+      $("page-title").textContent = button.textContent.trim().replace(/^[▦◈▤◎♙]\s*/, "");
+    });
+  });
+
+  $("refresh").addEventListener("click", async () => {
+    await loadPrices();
+    await loadChart();
+  });
+
+  $("chart-days").addEventListener("change", loadChart);
+  $("load-polymarket").addEventListener("click", loadPolymarket);
+
+  $("login-preview").addEventListener("click", () => {
+    $("login-message").textContent =
+      "UI preview only. Secure login requires the Rony Pro backend.";
+  });
+
+  loadPrices();
+  loadChart();
+  setInterval(loadPrices, 60000);
+</script>
+</body>
+                </html>
